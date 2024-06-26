@@ -1,0 +1,47 @@
+# Default server configuration
+server {
+	listen 80;
+	server_name localhost;
+	location /images/ {
+		root /home/kodep/test/redmine-4.2.11/public;
+	}
+
+	location /nginx_status {
+		stub_status;
+		allow 127.0.0.1;
+		deny all;
+		auth_basic "Restricted Area";
+		auth_basic_user_file /etc/nginx/.htpasswd;
+	}
+	
+	location /backend/ {
+	proxy_pass http://backend_servers;
+	proxy_set_header Host $host;
+	proxy_set_header X-Real-IP $remote_addr;
+	proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+	proxy_set_header X-Forwarded-Proto $scheme;
+
+	proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+	}
+	
+	location /healthz {
+		access_log off;
+		return 200 'OK';
+	}
+
+	root /home/kodep/test/redmine-4.2.11/public;
+	passenger_app_env production;
+	passenger_env_var SECRET_KEY_BASE "11d53ee928c59144c2c2e7b22f20d6b668ab1f1c537f1b7c0d8002b5028d27cd5c67f2a7cbc3ab146f22a4aa49fa5da328a755735aea95fe8a9347675e984a1d";
+	index index.html index.htm index.nginx-debian.html;
+
+	server_name _;
+
+	location / {
+		try_files $uri/index.html $uri.html $uri @ruby;
+	}
+	
+	location @ruby {
+		passenger_enabled on;
+	}
+
+}
